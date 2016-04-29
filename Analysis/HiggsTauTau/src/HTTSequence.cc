@@ -1416,8 +1416,8 @@ void HTTSequence::BuildMTPairs() {
         return  m->pt()                 > muon_pt    &&
                 fabs(m->eta())          < muon_eta   &&
                 fabs(m->dxy_vertex())   < muon_dxy   &&
-                fabs(m->dz_vertex())    < muon_dz   &&
-                MuonID(m);
+                fabs(m->dz_vertex())    < muon_dz;
+      //          MuonID(m);
 
       }));
 
@@ -1463,7 +1463,7 @@ BuildModule(HTTMuonEfficiency("MuonEfficiency")
 
   BuildTauSelection();
 
-  BuildModule(CompositeProducer<Muon, Tau>("MTPairProducer")
+ BuildModule(CompositeProducer<Muon, Tau>("MTPairProducer")
       .set_input_label_first("sel_muons")
       .set_input_label_second(js["taus"].asString())
       .set_candidate_name_first("lepton1")
