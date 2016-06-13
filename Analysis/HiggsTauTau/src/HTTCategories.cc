@@ -60,39 +60,38 @@ namespace ic {
     if (fs_ && write_tree_) {
       outtree_ = fs_->make<TTree>("ntuple","ntuple");
       outtree_->Branch("event",             &event_);
-      outtree_->Branch("wt",                &wt_.var_double);
+      outtree_->Branch("wt",                &wt_);
       outtree_->Branch("mpt_1",              &mpt_1_);
-      outtree_->Branch("mpt_2",              &mpt_2_);
-      outtree_->Branch("mpt_3",              &mpt_3_);
       outtree_->Branch("tpt_1",              &tpt_1_);
-      outtree_->Branch("tpt_2",              &tpt_2_);
-      outtree_->Branch("tpt_3",              &tpt_3_);
       outtree_->Branch("meta_1",              &meta_1_);
-      outtree_->Branch("meta_2",              &meta_2_);
-      outtree_->Branch("meta_3",              &meta_3_);
       outtree_->Branch("teta_1",              &teta_1_);
-      outtree_->Branch("teta_2",              &teta_2_);
-      outtree_->Branch("teta_3",              &teta_3_);
       outtree_->Branch("mphi_1",              &mphi_1_);
-      outtree_->Branch("mphi_2",              &mphi_2_);
-      outtree_->Branch("mphi_3",              &mphi_3_);
       outtree_->Branch("tphi_1",              &tphi_1_);
-      outtree_->Branch("tphi_2",              &tphi_2_);
-      outtree_->Branch("tphi_3",              &tphi_3_);
       outtree_->Branch("mE_1",              &mE_1_);
-      outtree_->Branch("mE_2",              &mE_2_);
-      outtree_->Branch("mE_3",              &mE_3_);
       outtree_->Branch("tE_1",              &tE_1_);
-      outtree_->Branch("tE_2",              &tE_2_);
-      outtree_->Branch("tE_3",              &tE_3_);
       outtree_->Branch("mq_1",              &mq_1_);
-      outtree_->Branch("mq_2",              &mq_2_);
-      outtree_->Branch("mq_3",              &mq_3_);
       outtree_->Branch("tq_1",              &tq_1_);
-      outtree_->Branch("tq_2",              &tq_2_);
-      outtree_->Branch("tq_3",              &tq_3_);
       outtree_->Branch("met",              &mvamet_);
-        
+      outtree_->Branch("n_jets",            &n_jets_);
+      outtree_->Branch("n_bjets",           &n_bjets_);
+      outtree_->Branch("miso_1",             &iso_1_);
+      outtree_->Branch("tiso_2",             &iso_2_);
+      outtree_->Branch("mt_2",              &mt_2_);
+      outtree_->Branch("mt_1",              &mt_1_);
+      outtree_->Branch("pt_tt",             &pt_tt_);
+      outtree_->Branch("m_vis",             &m_vis_);
+      outtree_->Branch("mdxy_1",             &d0_1_);
+      outtree_->Branch("tdxy_1",             &d0_2_);
+      outtree_->Branch("mdz_1",              &dz_1_);
+      outtree_->Branch("tdz_1",              &dz_2_);
+      outtree_->Branch("jpt_1",             &jpt_1_);
+      outtree_->Branch("jeta_1",            &jeta_1_);
+      outtree_->Branch("jphi_1",            &jeta_1_);
+      outtree_->Branch("bpt_1",             &bpt_1_);
+      outtree_->Branch("beta_1",            &beta_1_);
+      outtree_->Branch("bphi_1",            &beta_1_);
+      outtree_->Branch("dphi",            &dphi_);
+      outtree_->Branch("deta",            &deta_);
     }
 
     return 0;
@@ -107,91 +106,80 @@ namespace ic {
     run_ = eventInfo->run();
     event_ = (unsigned long long) eventInfo->event();
     lumi_ = eventInfo->lumi_block();
-  
+ 
+
+    std::vector<CompositeCandidate *> const& ditau_vec = event->GetPtrVec<CompositeCandidate>(ditau_label_);
+    CompositeCandidate const* ditau = ditau_vec.at(0);
+    Candidate const* lep1 = ditau->GetCandidate("lepton1");
+    Candidate const* lep2 = ditau->GetCandidate("lepton2");
+
     
     Met const* mets = NULL;
     mets = event->GetPtr<Met>(met_label_);
+
+    std::vector<PFJet*> jets = event->GetPtrVec<PFJet>(jets_label_);
+    std::vector<PFJet*> bjets = jets;
+    ic::erase_if(bjets,!boost::bind(MinPtMaxEta, _1, 20.0, 2.4));
+    double btag_wp;
+    std::string btag_label;
+    if(strategy_ == strategy::fall15) btag_label = "pfCombinedInclusiveSecondaryVertexV2BJetTags";
+    if(strategy_ == strategy::fall15) btag_wp = 0.8;
+    ic::erase_if(bjets, boost::bind(&PFJet::GetBDiscriminator, _1, btag_label) <btag_wp);
     
-    std::vector<Muon *> const& muons = event->GetPtrVec<Muon>("sel_muons");
-    Muon const* mu1 = muons.at(0);
-    Muon const* mu2 = NULL;
-    Muon const* mu3 = NULL;
-    if(muons.size()>1) mu2 = muons.at(1);
-    if(muons.size()>2) mu3 = muons.at(2);
-   
-    mpt_1_ = mu1->pt();
-    meta_1_ = mu1->eta();
-    mphi_1_ = mu1->phi();
-    mE_1_ = mu1->energy();
-    mq_1_ = mu1->charge();
-    if(muons.size()>1) {
-        mpt_2_ = mu2->pt();
-        meta_2_ = mu2->eta();
-        mphi_2_ = mu2->phi();
-        mE_2_ = mu2->energy();
-        mq_2_ = mu2->charge();
-    } else {
-        mpt_2_ = -9999;
-        meta_2_ = -9999;
-        mphi_2_ = -9999;
-        mE_2_ = -9999;
-        mq_2_ = -9999;
-    }
-    if(muons.size()>2) {
-        mpt_3_ = mu3->pt();
-        meta_3_ = mu3->eta();
-        mphi_3_ = mu3->phi();
-        mE_3_ = mu3->energy();
-        mq_3_ = mu3->charge();
-    } else {
-        mpt_3_ = -9999;
-        meta_3_ = -9999;
-        mphi_3_ = -9999;
-        mE_3_ = -9999;
-        mq_3_ = -9999;
-    }
+    Muon const* muon = dynamic_cast<Muon const*>(lep1);
+    Tau const* tau = dynamic_cast<Tau const*>(lep2);
 
-    std::vector<Tau *> const& taus = event->GetPtrVec<Tau>("taus");
-    Tau const* tau1 = taus.at(0);
-    Tau const* tau2 = NULL;
-    Tau const* tau3 = NULL;
-    if(taus.size()>1) tau2 = taus.at(1);
-    if(taus.size()>2) tau3 = taus.at(2);
-   
+    mpt_1_ = muon->pt();
+    meta_1_ = muon->eta();
+    mphi_1_ = muon->phi();
+    mE_1_ = muon->energy();
+    mq_1_ = muon->charge();
 
-    tpt_1_ = tau1->pt();
-    teta_1_ = tau1->eta();
-    tphi_1_ = tau1->phi();
-    tE_1_ = tau1->energy();
-    tq_1_ = tau1->charge();
-    if(taus.size()>1) {
-        tpt_2_ = tau2->pt();
-        teta_2_ = tau2->eta();
-        tphi_2_ = tau2->phi();
-        tE_2_ = tau2->energy();
-        tq_2_ = tau2->charge();
-    } else {
-        tpt_2_ = -9999;
-        teta_2_ = -9999;
-        tphi_2_ = -9999;
-        tE_2_ = -9999;
-        tq_2_ = -9999;
-    }
-    if(taus.size()>2) {
-        tpt_3_ = tau3->pt();
-        teta_3_ = tau3->eta();
-        tphi_3_ = tau3->phi();
-        tE_3_ = tau3->energy();
-        tq_3_ = tau3->charge();
-    } else {
-        tpt_3_ = -9999;
-        teta_3_ = -9999;
-        tphi_3_ = -9999;
-        tE_3_ = -9999;
-        tq_3_ = -9999;
-    }
+    tpt_1_ = tau->pt();
+    teta_1_ = tau->eta();
+    tphi_1_ = tau->phi();
+    tE_1_ = tau->energy();
+    tq_1_ = tau->charge();
 
     mvamet_ = mets->pt();
+
+    iso_1_ = PF04IsolationVal(muon, 0.5);
+    iso_2_ = tau->GetTauID("byCombinedIsolationDeltaBetaCorrRaw3Hits");
+    d0_1_ = muon->dxy_vertex();
+    dz_1_ = muon->dz_vertex();
+    d0_2_ = tau->lead_dxy_vertex();
+    dz_2_ = tau->lead_dz_vertex();
+  
+    m_vis_ = ditau->M();
+    pt_tt_ = (ditau->vector() + mets->vector()).pt();
+    mt_1_ = MT(lep1, mets);
+    mt_2_ = MT(lep2, mets);
+    dphi_ = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(lep1->vector(),lep2->vector()));
+    deta_ = std::fabs(meta_1_ - teta_1_);
+
+    n_jets_ = jets.size();
+    n_bjets_ = bjets.size();
+
+    if (n_jets_ >= 1) {
+      jpt_1_ = jets[0]->pt();
+      jeta_1_ = jets[0]->eta();
+      jphi_1_ = jets[0]->phi();
+    } else {
+      jpt_1_ = -9999;
+      jeta_1_ = -9999;
+      jphi_1_ = -9999;
+    }
+    
+if (n_bjets_ >= 1) {
+      bpt_1_ = bjets[0]->pt();
+      beta_1_ = bjets[0]->eta();
+      bphi_1_ = bjets[0]->phi();
+    } else {
+      bpt_1_ = -9999;
+      beta_1_ = -9999;
+      bphi_1_ = -9999;
+    }
+
     
     
     if (write_tree_ && fs_) outtree_->Fill();

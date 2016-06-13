@@ -1417,7 +1417,7 @@ void HTTSequence::BuildMTPairs() {
                 fabs(m->eta())          < muon_eta   &&
                 fabs(m->dxy_vertex())   < muon_dxy   &&
                 fabs(m->dz_vertex())    < muon_dz;
-      //          MuonID(m);
+                MuonID(m);
 
       }));
 
